@@ -2,8 +2,16 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { ParsedIntent, IntentType, Language } from "../types";
 
-// Always initialize GoogleGenAI with the apiKey from process.env.API_KEY directly.
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Helper to safely initialize AI
+const getAIClient = () => {
+  const apiKey = process.env.API_KEY;
+  if (!apiKey) {
+    console.warn("API_KEY is not defined in process.env");
+    return null;
+  }
+  return new GoogleGenAI({ apiKey });
+};
+
 const modelName = "gemini-3-flash-preview";
 
 const parsingSchema = {
@@ -38,7 +46,8 @@ const parsingSchema = {
 export const parseVoiceCommand = async (text: string, lang: Language): Promise<ParsedIntent> => {
   if (!text) throw new Error("No text provided");
   
-  if (!process.env.API_KEY) return mockParse(text, lang);
+  const ai = getAIClient();
+  if (!ai) return mockParse(text, lang);
 
   const langName = lang === Language.HINDI ? 'Pure Hindi' 
                  : lang === Language.MARATHI ? 'Pure Marathi' 
@@ -77,15 +86,15 @@ export const parseVoiceCommand = async (text: string, lang: Language): Promise<P
       intent: IntentType.UNKNOWN,
       confidence: 0,
       data: { raw_text: text },
-      confirmation_message: lang === Language.GUJARATI ? "કંઈક ભૂલ થઈ છે." : lang === Language.MARATHI ? "કાહીતરી ચૂક ઝાલી." : "कुछ गलत हो गया।"
+      confirmation_message: lang === Language.GUJARATI ? "કંઈક ભૂલ થઈ છે." : lang === Language.MARATHI ? "काहीतरी चूक झाली." : "कुछ गलत हो गया।"
     };
   }
 };
 
 const mockParse = (text: string, lang: Language): ParsedIntent => {
   let msg = "Processing complete.";
-  if (lang === Language.HINDI) msg = "मैंने नोट किया: ૨ एकड़ में टमाटर की बुवाई।";
-  if (lang === Language.MARATHI) msg = "मी नोंदवले: ૨ એકરાત ટોમૅટો લાવલે.";
+  if (lang === Language.HINDI) msg = "मैंने नोट किया: २ एकड़ में टमाटर की बुवाई।";
+  if (lang === Language.MARATHI) msg = "मी नोंदवले: २ एकरात टोमॅटो लावले.";
   if (lang === Language.GUJARATI) msg = "મેં નોંધ્યું: ૨ એકરમાં ટામેટાની વાવણી.";
   
   return {
